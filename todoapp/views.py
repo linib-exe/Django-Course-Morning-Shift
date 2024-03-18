@@ -4,7 +4,7 @@ from .models import TODO
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
-
+from django.http import HttpResponse
 
 # Create your views here.
 @login_required(login_url="login")
@@ -31,18 +31,24 @@ def retreive(request):
 def update(request,id):
     todo = TODO.objects.get(id=id)
     form = TODOForm(instance=todo)
-    if request.method =='POST':
-        # print(request.POST)
-        form = TODOForm(request.POST,instance=todo)
-        if form.is_valid():
-            form.save()
-            return redirect('/retreive')
-    return render(request,'create.html',{'form':form})
+    if (todo.user == request.user):
+        if request.method =='POST':
+            # print(request.POST)
+            form = TODOForm(request.POST,instance=todo)
+            if form.is_valid():
+                form.save()
+                return redirect('retreive')
+        return render(request,'create.html',{'form':form})
+    else:
+        return HttpResponse("Arkako update garchhas lathuwa")
 
 def delete(request,id):
     todo = TODO.objects.get(id=id)
-    todo.delete()
-    return redirect('retreive')
+    if (todo.user == request.user):
+        todo.delete()
+        return redirect('retreive')
+    else:
+        return HttpResponse("Arkako delete garchhas lathuwa")
 
 def register(request):
     if request.method == 'POST':
@@ -66,7 +72,7 @@ def loginn(request):
                             password=password)
         if user is not None:
             login(request, user)
-            return redirect('retreive')  # Assuming this is the correct URL for redirection upon successful login
+            return redirect('retreive')  
     return render(request, 'login.html')
 
 def logoutt(request):
