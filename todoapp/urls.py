@@ -7,5 +7,6 @@ urlpatterns = [
     path('delete/<int:id>/',views.delete),
     path('register/',views.register,name='register'),
     path('login/',views.loginn,name='login'),
-    path('logout/',views.logoutt,name='logout')
+    path('logout/',views.logoutt,name='logout'),
+    path('search/',views.search,name='search')
 ]

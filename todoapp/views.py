@@ -79,3 +79,12 @@ def logoutt(request):
     logout(request)
     return redirect('retreive')
 
+def search(request):
+    query = request.GET.get('query')
+    if query:
+        results = TODO.objects.filter(title__icontains=query)
+    else:
+        results = None
+    
+    return render(request, 'search_results.html', {'results': results})
+
