@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from .serializers import TODOSerializer
 
 # --------- REST Framework --------------------
 from rest_framework.response import Response
@@ -96,10 +97,20 @@ def search(request):
 
 # --------- REST Framework --------------------
 
+# @api_view(['GET'])
+# def get_TODO(request):
+#     todo = {'title':'api test','description':'This is used to test the api'}
+#     return Response(todo)
+
 @api_view(['GET'])
 def get_TODO(request):
-    todo = {'title':'api test','description':'This is used to test the api'}
-    return Response(todo)
+    todo = TODO.objects.all()
+    serializer = TODOSerializer(todo,many=True)
+    context = {
+        'status':200,
+        'data':serializer.data
+    }
+    return Response(context)
 
 # --------- REST Framework --------------------
 
