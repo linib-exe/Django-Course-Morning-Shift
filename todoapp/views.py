@@ -6,6 +6,11 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 
+# --------- REST Framework --------------------
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+# --------- REST Framework --------------------
+
 # Create your views here.
 @login_required(login_url="login")
 def create(request):
@@ -87,4 +92,14 @@ def search(request):
         results = None
     
     return render(request, 'search_results.html', {'results': results})
+
+
+# --------- REST Framework --------------------
+
+@api_view(['GET'])
+def get_TODO(request):
+    todo = {'title':'api test','description':'This is used to test the api'}
+    return Response(todo)
+
+# --------- REST Framework --------------------
 
