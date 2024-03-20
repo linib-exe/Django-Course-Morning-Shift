@@ -112,5 +112,27 @@ def get_TODO(request):
     }
     return Response(context)
 
+@api_view(['POST'])
+def save_TODO(request):
+    data = request.data
+    serializer = TODOSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(
+            {
+                'status':200,
+                'data':serializer.data,
+                'message':'data saved successfully'
+            }
+        )
+    
+    return Response(
+        {
+            'status':400,
+            'message':'Someting went wrong',
+            'data':serializer.data
+        }
+    )
+
 # --------- REST Framework --------------------
 
