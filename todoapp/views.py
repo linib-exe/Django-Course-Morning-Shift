@@ -6,10 +6,21 @@ from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from .serializers import TODOSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.hashers import check_password
+from rest_framework.exceptions import ValidationError
+from .serializers import UserLoginSerializer
+from django.db.models import Q
+
 
 # --------- REST Framework --------------------
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 # --------- REST Framework --------------------
 
 # Create your views here.
@@ -37,6 +48,7 @@ def retreive(request):
 def update(request,id):
     todo = TODO.objects.get(id=id)
     form = TODOForm(instance=todo)
+    print(request.user == todo.user)
     if (todo.user == request.user):
         if request.method =='POST':
             # print(request.POST)
@@ -70,16 +82,19 @@ def register(request):
     return render(request,'register.html')
 
 def loginn(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request,
-                            username=username,
-                            password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('retreive')  
-    return render(request, 'login.html')
+    if request.user.is_authenticated:
+        return redirect('retreive')
+    else:
+        if request.method == 'POST':
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            user = authenticate(request,
+                                username=username,
+                                password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('retreive')  
+        return render(request, 'login.html')
 
 def logoutt(request):
     logout(request)
@@ -88,10 +103,15 @@ def logoutt(request):
 def search(request):
     query = request.GET.get('query')
     if query:
-        results = TODO.objects.filter(title__icontains=query)
+        # results = TODO.objects.filter(title__icontains=query, user=resquest.user)
+        try:
+            results = TODO.objects.filter(Q(title__icontains=query) & Q(user=request.user))
+            if results.exists() == False:
+                return HttpResponse("No items found")
+        except:
+            return redirect('login')
     else:
         results = None
-    
     return render(request, 'search_results.html', {'results': results})
 
 
@@ -133,6 +153,67 @@ def save_TODO(request):
             'data':serializer.data
         }
     )
+
+@api_view(['PUT'])
+
+def update_TODO(request,id):
+    try:
+        todo = TODO.objects.get(id=id)
+        
+    except:
+        return Response({'message':"Couldn't find the todo"})
+    print(todo.user,request.user)
+    if todo.user == request.user :
+        serializer = TODOSerializer(todo,data = request.data,partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    'status':200,
+                    'message':"Data updated Successfully",
+                    'data':serializer.data
+                }
+            )
+        else:
+            return Response({'message':"Data is invalid"})
+    else:
+        return Response({'message':'User is not valid'})
+    
+    
+
+@api_view(['POST'])
+def login_user(request):
+    if request.method == 'POST':
+        # Create an instance of UserLoginSerializer with request data
+        serializer = UserLoginSerializer(data=request.data)
+
+        # Validate the serializer data
+        if serializer.is_valid():
+            try:
+                # Retrieve user by username from serializer data
+                username = serializer.validated_data.get('username')
+                user = User.objects.get(username=username)
+                
+                # Check if password is correct from serializer data
+                password = serializer.validated_data.get('password')
+                if check_password(password, user.password):
+                    # Generate or retrieve authentication token
+                    token, created = Token.objects.get_or_create(user=user)
+                    
+                    # Return success response with token and admin status
+                    return Response({
+                        "success": True,
+                        "token": token.key,
+                        
+                    })
+                else:
+                    return Response({"success": False, "message": "Incorrect password"})
+            except ObjectDoesNotExist:
+                return Response({"success": False, "message": "User does not exist"})
+        else:
+            # Return error response if serializer data is invalid
+            return Response({"success": False, "errors": serializer.errors})
+    
 
 # --------- REST Framework --------------------
 
