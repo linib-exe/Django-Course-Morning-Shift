@@ -1,0 +1,20 @@
+1. Install pillow   
+    pip install pillow
+2. Add image field to the model. 
+    image = models.ImageField(upoad_to = 'images/') #this will be uploaded to relative path of MEDIA_ROOT settings
+3. After making changes in the model 
+    python manage.py makemigrations
+    python manage.py migrate
+4. Configure media files in settings.py 
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR/'media'
+5. In urls.py of project add the following code 
+    from django.conf import settings
+    from django.conf.urls.static import static
+    ......
+    if settings.DEBUG:
+        urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+6. Make changes in the html
+    <form method="post" class="todo-form" enctype="multipart/form-data">
+7. Make changes in the views
+    form = TODOForm(request.POST,request.FILES)
